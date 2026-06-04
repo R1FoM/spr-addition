@@ -42,6 +42,9 @@ public final class SPRAdditionDeathHelper {
     private static final ConcurrentHashMap<UUID, Set<UUID>> PLAYER_DEATH_RAGDOLLS = 
             new ConcurrentHashMap<>();
 
+    private static final ConcurrentHashMap<UUID, Integer> EMPTY_RAGDOLL_TICKS = 
+            new ConcurrentHashMap<>();
+
     private SPRAdditionDeathHelper() {}
 
     public static UUID spawnDeathRagdoll(ServerPlayer player, ServerLevel level) {
@@ -271,12 +274,60 @@ public final class SPRAdditionDeathHelper {
         return result;
     }
 
+    public static void tickEmptyRagdolls(net.minecraft.server.MinecraftServer server) {
+        if (!SPRAdditionSettings.autoRemoveEmptyRagdolls()) {
+            if (!EMPTY_RAGDOLL_TICKS.isEmpty()) EMPTY_RAGDOLL_TICKS.clear();
+            return;
+        }
+
+        int maxTicks = SPRAdditionSettings.emptyRagdollRemovalTimer() * 20; // Assuming 20 TPS
+
+        for (UUID headId : DEATH_RAGDOLL_HEADS) {
+            if (isInventoryEmpty(headId)) {
+                int ticks = EMPTY_RAGDOLL_TICKS.getOrDefault(headId, 0) + 1;
+                if (ticks >= maxTicks) {
+                    expireDeathRagdoll(server, headId);
+                    EMPTY_RAGDOLL_TICKS.remove(headId);
+                } else {
+                    EMPTY_RAGDOLL_TICKS.put(headId, ticks);
+                }
+            } else {
+                EMPTY_RAGDOLL_TICKS.remove(headId);
+            }
+        }
+    }
+
+    private static boolean isInventoryEmpty(UUID headId) {
+        NonNullList<ItemStack> inv = DEATH_INVENTORIES.get(headId);
+        if (inv == null) return true;
+        for (ItemStack stack : inv) {
+            if (!stack.isEmpty()) return false;
+        }
+        return true;
+    }
+
+    private static void expireDeathRagdoll(net.minecraft.server.MinecraftServer server, UUID headId) {
+        for (ServerLevel level : server.getAllLevels()) {
+            SubLevelPhysicsSystem physicsSystem = SubLevelPhysicsSystem.get(level);
+            if (physicsSystem == null) continue;
+            SubLevelContainer container = SubLevelContainer.getContainer(level);
+            if (container instanceof ServerSubLevelContainer serverContainer) {
+                SubLevel subLevel = serverContainer.getSubLevel(headId);
+                if (subLevel instanceof ServerSubLevel serverSubLevel && !serverSubLevel.isRemoved()) {
+                    RagdollExpireHelper.expireImmediate(physicsSystem, level, serverSubLevel, "empty inventory timeout");
+                    return;
+                }
+            }
+        }
+    }
+
     public static void resetState() {
         DEATH_INVENTORIES.clear();
         DEATH_RAGDOLL_HEADS.clear();
         PENDING_INVENTORY_SUPPRESS.clear();
         LATEST_DEATH_RAGDOLLS.clear();
         PLAYER_DEATH_RAGDOLLS.clear();
+        EMPTY_RAGDOLL_TICKS.clear();
     }
 }
 

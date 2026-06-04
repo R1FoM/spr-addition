@@ -24,6 +24,14 @@ public final class SPRAdditionConfig {
             .comment("When true, the player's full inventory is stored in the TORSO of the death ragdoll instead of dropping normally. Items drop when the ragdoll expires.")
             .define("transferInventoryToRagdoll", true);
 
+    public static final BooleanValue AUTO_REMOVE_EMPTY_RAGDOLLS = BUILDER
+            .comment("When true, death ragdolls will be automatically removed after a delay if their inventory is empty.")
+            .define("autoRemoveEmptyRagdolls", false);
+
+    public static final ModConfigSpec.IntValue EMPTY_RAGDOLL_REMOVAL_TIMER = BUILDER
+            .comment("The delay (in seconds) before an empty death ragdoll is automatically removed (if autoRemoveEmptyRagdolls is true). Default is 60.")
+            .defineInRange("emptyRagdollRemovalTimer", 60, 1, 3600);
+
     static {
         BUILDER.pop();
         BUILDER.comment("Ragdoll grabbing physics configuration").push("grab_physics");
@@ -72,6 +80,8 @@ public final class SPRAdditionConfig {
     private static void apply() {
         SPRAdditionSettings.setSpawnRagdollOnDeath(SPAWN_RAGDOLL_ON_DEATH.get());
         SPRAdditionSettings.setTransferInventoryToRagdoll(TRANSFER_INVENTORY_TO_RAGDOLL.get());
+        SPRAdditionSettings.setAutoRemoveEmptyRagdolls(AUTO_REMOVE_EMPTY_RAGDOLLS.get());
+        SPRAdditionSettings.setEmptyRagdollRemovalTimer(EMPTY_RAGDOLL_REMOVAL_TIMER.get());
         SPRAdditionSettings.setGrabStiffness(GRAB_STIFFNESS.get());
         SPRAdditionSettings.setGrabDamping(GRAB_DAMPING.get());
         SPRAdditionSettings.setGrabMaxForce(GRAB_MAX_FORCE.get());

@@ -43,6 +43,8 @@ import com.mojang.logging.LogUtils;
 
 import java.util.UUID;
 
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+
 @Mod("spr_addition")
 public final class SPRAddition {
 
@@ -58,6 +60,11 @@ public final class SPRAddition {
         NeoForge.EVENT_BUS.addListener(SPRAddition::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onServerStopped);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onRegisterCommands);
+        NeoForge.EVENT_BUS.addListener(SPRAddition::onServerTick);
+    }
+
+    private static void onServerTick(ServerTickEvent.Post event) {
+        SPRAdditionDeathHelper.tickEmptyRagdolls(event.getServer());
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
