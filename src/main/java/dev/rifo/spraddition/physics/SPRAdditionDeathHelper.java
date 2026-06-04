@@ -28,24 +28,25 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class SPRAdditionDeathHelper {
 
-    private static final ConcurrentHashMap<UUID, NonNullList<ItemStack>> DEATH_INVENTORIES =
-            new ConcurrentHashMap<>();
-
-    private static final Set<UUID> DEATH_RAGDOLL_HEADS = ConcurrentHashMap.newKeySet();
+    private static SPRAdditionSavedData savedData = new SPRAdditionSavedData();
 
     private static final ConcurrentHashMap<UUID, UUID> PENDING_INVENTORY_SUPPRESS =
             new ConcurrentHashMap<>();
 
-    private static final ConcurrentHashMap<UUID, UUID> LATEST_DEATH_RAGDOLLS = 
-            new ConcurrentHashMap<>();
-
-    private static final ConcurrentHashMap<UUID, Set<UUID>> PLAYER_DEATH_RAGDOLLS = 
-            new ConcurrentHashMap<>();
-
-    private static final ConcurrentHashMap<UUID, Integer> EMPTY_RAGDOLL_TICKS = 
-            new ConcurrentHashMap<>();
-
     private SPRAdditionDeathHelper() {}
+
+    public static void load(net.minecraft.server.MinecraftServer server) {
+        SPRAdditionSavedData loaded = SPRAdditionSavedData.get(server.overworld());
+        // Transfer any pending data
+        loaded.deathRagdollHeads.addAll(savedData.deathRagdollHeads);
+        loaded.playerDeathRagdolls.putAll(savedData.playerDeathRagdolls);
+        loaded.latestDeathRagdolls.putAll(savedData.latestDeathRagdolls);
+        loaded.deathInventories.putAll(savedData.deathInventories);
+        loaded.emptyRagdollTicks.putAll(savedData.emptyRagdollTicks);
+        loaded.absoluteRagdollTicks.putAll(savedData.absoluteRagdollTicks);
+        savedData = loaded;
+        savedData.setDirty();
+    }
 
     public static UUID spawnDeathRagdoll(ServerPlayer player, ServerLevel level) {
         if (!RagdollSettings.enabled() || !SPRAdditionSettings.spawnRagdollOnDeath()) {
@@ -68,12 +69,12 @@ public final class SPRAdditionDeathHelper {
         }
 
         UUID headId = headSubLevel.getUniqueId();
-        DEATH_RAGDOLL_HEADS.add(headId);
-        LATEST_DEATH_RAGDOLLS.put(player.getUUID(), headId);
-        PLAYER_DEATH_RAGDOLLS.computeIfAbsent(player.getUUID(), k -> ConcurrentHashMap.newKeySet()).add(headId);
+        savedData.deathRagdollHeads.add(headId);
+        savedData.latestDeathRagdolls.put(player.getUUID(), headId);
+        savedData.playerDeathRagdolls.computeIfAbsent(player.getUUID(), k -> ConcurrentHashMap.newKeySet()).add(headId);
 
         if (SPRAdditionSettings.transferInventoryToRagdoll()) {
-            DEATH_INVENTORIES.put(headId, inventory);
+            savedData.deathInventories.put(headId, inventory);
             PENDING_INVENTORY_SUPPRESS.put(player.getUUID(), headId);
             SablePlayerRagdoll.LOGGER.info(
                     "[spr_addition] death ragdoll {} spawned for {} with {} inventory items",
@@ -84,7 +85,8 @@ public final class SPRAdditionDeathHelper {
                     "[spr_addition] death ragdoll {} spawned for {} (inventory transfer disabled)",
                     RagdollRegistry.shortId(headId), player.getGameProfile().getName());
         }
-
+        
+        savedData.setDirty();
         return headId;
     }
 
@@ -101,7 +103,7 @@ public final class SPRAdditionDeathHelper {
         Vec3 heading = Vec3.directionFromRotation(0.0F, (float) headingDegrees);
         Vec3 forward = normalizeOr(new Vec3(heading.x, 0.0, heading.z), new Vec3(0.0, 0.0, 1.0));
         Vec3 right = horizontalRight(forward);
-        Vec3 baseCenter = Vec3.atCenterOf(BlockPos.containing(position));
+        Vec3 baseCenter = position.add(0, 0.1, 0); // Spawn slightly above exactly where the player died to prevent block intersection
 
         RagdollAssemblyHelper.Doll doll = RagdollAssemblyHelper.spawn(level, player, baseCenter, right, forward);
         if (doll == null) return null;
@@ -142,15 +144,20 @@ public final class SPRAdditionDeathHelper {
 
     public static void dropInventoryAtRagdoll(ServerLevel level, ServerSubLevel headSubLevel) {
         UUID headId = headSubLevel.getUniqueId();
-        if (!DEATH_RAGDOLL_HEADS.remove(headId)) {
+        if (!savedData.deathRagdollHeads.remove(headId)) {
             return;
         }
 
-        for (Set<UUID> set : PLAYER_DEATH_RAGDOLLS.values()) {
+        for (Set<UUID> set : savedData.playerDeathRagdolls.values()) {
             set.remove(headId);
         }
 
-        NonNullList<ItemStack> inventory = DEATH_INVENTORIES.remove(headId);
+        savedData.emptyRagdollTicks.remove(headId);
+        savedData.absoluteRagdollTicks.remove(headId);
+
+        NonNullList<ItemStack> inventory = savedData.deathInventories.remove(headId);
+        savedData.setDirty();
+
         if (inventory == null || inventory.isEmpty()) {
             return;
         }
@@ -175,11 +182,11 @@ public final class SPRAdditionDeathHelper {
     }
 
     public static UUID getLatestDeathRagdoll(UUID playerId) {
-        return LATEST_DEATH_RAGDOLLS.get(playerId);
+        return savedData.latestDeathRagdolls.get(playerId);
     }
 
     public static Set<UUID> getAllDeathRagdolls(UUID playerId) {
-        Set<UUID> set = PLAYER_DEATH_RAGDOLLS.get(playerId);
+        Set<UUID> set = savedData.playerDeathRagdolls.get(playerId);
         return set != null ? set : Set.of();
     }
 
@@ -202,30 +209,36 @@ public final class SPRAdditionDeathHelper {
                 .add(0.0, 0.5, 0.0);
     }
 
+    public static Set<UUID> getAllDeathRagdollHeads() {
+        return savedData.deathRagdollHeads;
+    }
+
     public static boolean isDeathRagdoll(UUID headId) {
-        return DEATH_RAGDOLL_HEADS.contains(headId);
+        return savedData.deathRagdollHeads.contains(headId);
     }
 
     public static void registerDeathRagdoll(UUID headId, NonNullList<ItemStack> inventory) {
-        DEATH_RAGDOLL_HEADS.add(headId);
+        savedData.deathRagdollHeads.add(headId);
         if (!inventory.isEmpty()) {
-            DEATH_INVENTORIES.put(headId, inventory);
+            savedData.deathInventories.put(headId, inventory);
             PENDING_INVENTORY_SUPPRESS.put(headId, headId);
         }
+        savedData.setDirty();
     }
 
     public static List<ItemStack> getInventorySnapshot(UUID headId) {
-        NonNullList<ItemStack> inv = DEATH_INVENTORIES.get(headId);
+        NonNullList<ItemStack> inv = savedData.deathInventories.get(headId);
         if (inv == null) return List.of();
         return inv.stream().filter(s -> !s.isEmpty()).map(ItemStack::copy).toList();
     }
 
     public static boolean addItem(UUID headId, ItemStack item) {
-        NonNullList<ItemStack> inv = DEATH_INVENTORIES.get(headId);
+        NonNullList<ItemStack> inv = savedData.deathInventories.get(headId);
         if (inv == null || item.isEmpty()) return false;
         for (int i = 0; i < inv.size(); i++) {
             if (inv.get(i).isEmpty()) {
                 inv.set(i, item.copy());
+                savedData.setDirty();
                 return true;
             }
         }
@@ -233,7 +246,7 @@ public final class SPRAdditionDeathHelper {
     }
 
     public static void setInventory(UUID headId, List<ItemStack> items) {
-        if (!DEATH_RAGDOLL_HEADS.contains(headId)) return;
+        if (!savedData.deathRagdollHeads.contains(headId)) return;
         NonNullList<ItemStack> inv = NonNullList.withSize(54, ItemStack.EMPTY);
         int slot = 0;
         for (ItemStack item : items) {
@@ -242,11 +255,14 @@ public final class SPRAdditionDeathHelper {
                 inv.set(slot++, item.copy());
             }
         }
-        DEATH_INVENTORIES.put(headId, inv);
+        savedData.deathInventories.put(headId, inv);
+        savedData.setDirty();
     }
 
     public static void clearInventory(UUID headId) {
-        DEATH_INVENTORIES.remove(headId);
+        if (savedData.deathInventories.remove(headId) != null) {
+            savedData.setDirty();
+        }
     }
 
     public static NonNullList<ItemStack> captureFullInventory(ServerPlayer player) {
@@ -275,30 +291,61 @@ public final class SPRAdditionDeathHelper {
     }
 
     public static void tickEmptyRagdolls(net.minecraft.server.MinecraftServer server) {
-        if (!SPRAdditionSettings.autoRemoveEmptyRagdolls()) {
-            if (!EMPTY_RAGDOLL_TICKS.isEmpty()) EMPTY_RAGDOLL_TICKS.clear();
-            return;
+        boolean dirty = false;
+
+        boolean checkEmpty = SPRAdditionSettings.autoRemoveEmptyRagdolls();
+        int maxEmptyTicks = SPRAdditionSettings.emptyRagdollRemovalTimer() * 20;
+
+        int maxAbsoluteTimer = SPRAdditionSettings.absoluteRagdollRemovalTimer();
+        boolean checkAbsolute = maxAbsoluteTimer > 0;
+        int maxAbsoluteTicks = maxAbsoluteTimer * 20;
+
+        for (UUID headId : savedData.deathRagdollHeads) {
+            boolean expired = false;
+            
+            // Check absolute timer
+            if (checkAbsolute) {
+                int absTicks = savedData.absoluteRagdollTicks.getOrDefault(headId, 0) + 1;
+                if (absTicks >= maxAbsoluteTicks) {
+                    expireDeathRagdoll(server, headId);
+                    expired = true;
+                } else {
+                    savedData.absoluteRagdollTicks.put(headId, absTicks);
+                    dirty = true;
+                }
+            } else if (!savedData.absoluteRagdollTicks.isEmpty()) {
+                savedData.absoluteRagdollTicks.clear();
+                dirty = true;
+            }
+
+            if (expired) continue;
+
+            // Check empty timer
+            if (checkEmpty) {
+                if (isInventoryEmpty(headId)) {
+                    int ticks = savedData.emptyRagdollTicks.getOrDefault(headId, 0) + 1;
+                    if (ticks >= maxEmptyTicks) {
+                        expireDeathRagdoll(server, headId);
+                    } else {
+                        savedData.emptyRagdollTicks.put(headId, ticks);
+                        dirty = true;
+                    }
+                } else {
+                    if (savedData.emptyRagdollTicks.remove(headId) != null) dirty = true;
+                }
+            } else if (!savedData.emptyRagdollTicks.isEmpty()) {
+                savedData.emptyRagdollTicks.clear();
+                dirty = true;
+            }
         }
 
-        int maxTicks = SPRAdditionSettings.emptyRagdollRemovalTimer() * 20; // Assuming 20 TPS
-
-        for (UUID headId : DEATH_RAGDOLL_HEADS) {
-            if (isInventoryEmpty(headId)) {
-                int ticks = EMPTY_RAGDOLL_TICKS.getOrDefault(headId, 0) + 1;
-                if (ticks >= maxTicks) {
-                    expireDeathRagdoll(server, headId);
-                    EMPTY_RAGDOLL_TICKS.remove(headId);
-                } else {
-                    EMPTY_RAGDOLL_TICKS.put(headId, ticks);
-                }
-            } else {
-                EMPTY_RAGDOLL_TICKS.remove(headId);
-            }
+        if (dirty) {
+            savedData.setDirty();
         }
     }
 
     private static boolean isInventoryEmpty(UUID headId) {
-        NonNullList<ItemStack> inv = DEATH_INVENTORIES.get(headId);
+        NonNullList<ItemStack> inv = savedData.deathInventories.get(headId);
         if (inv == null) return true;
         for (ItemStack stack : inv) {
             if (!stack.isEmpty()) return false;
@@ -307,6 +354,7 @@ public final class SPRAdditionDeathHelper {
     }
 
     private static void expireDeathRagdoll(net.minecraft.server.MinecraftServer server, UUID headId) {
+        // We do not remove it from savedData here; RagdollExpireHelper triggers the event that calls dropInventoryAtRagdoll which cleans it up.
         for (ServerLevel level : server.getAllLevels()) {
             SubLevelPhysicsSystem physicsSystem = SubLevelPhysicsSystem.get(level);
             if (physicsSystem == null) continue;
@@ -314,7 +362,7 @@ public final class SPRAdditionDeathHelper {
             if (container instanceof ServerSubLevelContainer serverContainer) {
                 SubLevel subLevel = serverContainer.getSubLevel(headId);
                 if (subLevel instanceof ServerSubLevel serverSubLevel && !serverSubLevel.isRemoved()) {
-                    RagdollExpireHelper.expireImmediate(physicsSystem, level, serverSubLevel, "empty inventory timeout");
+                    RagdollExpireHelper.expireImmediate(physicsSystem, level, serverSubLevel, "timeout");
                     return;
                 }
             }
@@ -322,12 +370,6 @@ public final class SPRAdditionDeathHelper {
     }
 
     public static void resetState() {
-        DEATH_INVENTORIES.clear();
-        DEATH_RAGDOLL_HEADS.clear();
         PENDING_INVENTORY_SUPPRESS.clear();
-        LATEST_DEATH_RAGDOLLS.clear();
-        PLAYER_DEATH_RAGDOLLS.clear();
-        EMPTY_RAGDOLL_TICKS.clear();
     }
 }
-

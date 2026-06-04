@@ -61,6 +61,7 @@ public final class SPRAddition {
         NeoForge.EVENT_BUS.addListener(SPRAddition::onServerStopped);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onServerTick);
+        NeoForge.EVENT_BUS.addListener(SPRAddition::onServerStarting);
     }
 
     private static void onServerTick(ServerTickEvent.Post event) {
@@ -158,5 +159,9 @@ public final class SPRAddition {
     private static void onServerStopped(ServerStoppedEvent event) {
         SPRAdditionDeathHelper.resetState();
     }
-}
 
+    private static void onServerStarting(net.neoforged.neoforge.event.server.ServerStartingEvent event) {
+        SPRAdditionDeathHelper.load(event.getServer());
+        LOGGER.info("SablePlayerRagdoll Addition Server Starting. Loaded saved data.");
+    }
+}

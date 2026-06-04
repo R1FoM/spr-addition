@@ -3,8 +3,9 @@ package dev.rifo.spraddition.config;
 public final class SPRAdditionSettings {
     private static boolean spawnRagdollOnDeath = true;
     private static boolean transferInventoryToRagdoll = true;
-    private static boolean autoRemoveEmptyRagdolls = false;
+    private static boolean autoRemoveEmptyRagdolls = true;
     private static int emptyRagdollRemovalTimer = 60;
+    private static int absoluteRagdollRemovalTimer = 300;
 
     private static double grabStiffness = 35.0;
     private static double grabDamping = 15.0;
@@ -44,6 +45,14 @@ public final class SPRAdditionSettings {
 
     public static void setEmptyRagdollRemovalTimer(int v) {
         emptyRagdollRemovalTimer = v;
+    }
+
+    public static int absoluteRagdollRemovalTimer() {
+        return absoluteRagdollRemovalTimer;
+    }
+
+    public static void setAbsoluteRagdollRemovalTimer(int v) {
+        absoluteRagdollRemovalTimer = v;
     }
 
     public static double grabStiffness() {

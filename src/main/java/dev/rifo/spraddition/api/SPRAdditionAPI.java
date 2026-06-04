@@ -76,7 +76,7 @@ public final class SPRAdditionAPI {
     }
 
     public static void removeAllRagdolls(net.minecraft.server.MinecraftServer server) {
-        java.util.Set<UUID> ragdollIds = new java.util.HashSet<>(dev.rifo.spraddition.mixin.RagdollRegistryAccessor.getRagdollBodyIds());
+        java.util.Set<UUID> ragdollIds = new java.util.HashSet<>(SPRAdditionDeathHelper.getAllDeathRagdollHeads());
         for (ServerLevel level : server.getAllLevels()) {
             SubLevelPhysicsSystem physicsSystem = SubLevelPhysicsSystem.get(level);
             if (physicsSystem == null) continue;

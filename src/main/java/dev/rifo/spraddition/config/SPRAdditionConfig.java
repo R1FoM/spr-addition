@@ -26,11 +26,15 @@ public final class SPRAdditionConfig {
 
     public static final BooleanValue AUTO_REMOVE_EMPTY_RAGDOLLS = BUILDER
             .comment("When true, death ragdolls will be automatically removed after a delay if their inventory is empty.")
-            .define("autoRemoveEmptyRagdolls", false);
+            .define("autoRemoveEmptyRagdolls", true);
 
     public static final ModConfigSpec.IntValue EMPTY_RAGDOLL_REMOVAL_TIMER = BUILDER
             .comment("The delay (in seconds) before an empty death ragdoll is automatically removed (if autoRemoveEmptyRagdolls is true). Default is 60.")
             .defineInRange("emptyRagdollRemovalTimer", 60, 1, 3600);
+
+    public static final ModConfigSpec.IntValue ABSOLUTE_RAGDOLL_REMOVAL_TIMER = BUILDER
+            .comment("The absolute delay (in seconds) before ANY death ragdoll is automatically removed, even if it contains items. Default is 300 (5 minutes). Set to 0 to disable.")
+            .defineInRange("absoluteRagdollRemovalTimer", 300, 0, 86400);
 
     static {
         BUILDER.pop();
@@ -82,6 +86,7 @@ public final class SPRAdditionConfig {
         SPRAdditionSettings.setTransferInventoryToRagdoll(TRANSFER_INVENTORY_TO_RAGDOLL.get());
         SPRAdditionSettings.setAutoRemoveEmptyRagdolls(AUTO_REMOVE_EMPTY_RAGDOLLS.get());
         SPRAdditionSettings.setEmptyRagdollRemovalTimer(EMPTY_RAGDOLL_REMOVAL_TIMER.get());
+        SPRAdditionSettings.setAbsoluteRagdollRemovalTimer(ABSOLUTE_RAGDOLL_REMOVAL_TIMER.get());
         SPRAdditionSettings.setGrabStiffness(GRAB_STIFFNESS.get());
         SPRAdditionSettings.setGrabDamping(GRAB_DAMPING.get());
         SPRAdditionSettings.setGrabMaxForce(GRAB_MAX_FORCE.get());
