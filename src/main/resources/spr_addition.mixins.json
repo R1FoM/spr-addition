@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.rifo.spraddition.mixin",
+  "refmap": "spr_addition.refmap.json",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MixinRagdollPartBlockEntity",
+    "MixinRagdollPartBlockEntityGrabConstraint",
+    "MixinRagdollExpireHelper",
+    "RagdollRegistryAccessor"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+
