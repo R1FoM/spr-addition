@@ -84,6 +84,11 @@ repositories {
         filter { includeGroupAndSubgroups('org.spongepowered') }
     }
 
+    maven {
+        name = "Curios"
+        url = uri("https://maven.theillusivec4.top/")
+    }
+
     flatDir {
         dirs 'f:/mods/sable-player-ragdoll-main/build/libs'
     }
@@ -96,6 +101,8 @@ dependencies {
 
     compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.4.1'
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
+
+    compileOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1:api"
 
     implementation("dev.ryanhcode.sable:sable-neoforge-${minecraft_version}:${sable_version}") {
         exclude group: 'foundry.veil'

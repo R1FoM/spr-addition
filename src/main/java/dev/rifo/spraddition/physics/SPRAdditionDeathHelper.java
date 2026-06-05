@@ -228,8 +228,8 @@ public final class SPRAdditionDeathHelper {
 
     public static List<ItemStack> getInventorySnapshot(UUID headId) {
         NonNullList<ItemStack> inv = savedData.deathInventories.get(headId);
-        if (inv == null) return List.of();
-        return inv.stream().filter(s -> !s.isEmpty()).map(ItemStack::copy).toList();
+        if (inv == null) return NonNullList.withSize(54, ItemStack.EMPTY);
+        return inv.stream().map(ItemStack::copy).toList();
     }
 
     public static boolean addItem(UUID headId, ItemStack item) {
@@ -248,11 +248,10 @@ public final class SPRAdditionDeathHelper {
     public static void setInventory(UUID headId, List<ItemStack> items) {
         if (!savedData.deathRagdollHeads.contains(headId)) return;
         NonNullList<ItemStack> inv = NonNullList.withSize(54, ItemStack.EMPTY);
-        int slot = 0;
-        for (ItemStack item : items) {
-            if (slot >= inv.size()) break;
+        for (int i = 0; i < Math.min(items.size(), inv.size()); i++) {
+            ItemStack item = items.get(i);
             if (!item.isEmpty()) {
-                inv.set(slot++, item.copy());
+                inv.set(i, item.copy());
             }
         }
         savedData.deathInventories.put(headId, inv);
@@ -269,24 +268,31 @@ public final class SPRAdditionDeathHelper {
         NonNullList<ItemStack> result = NonNullList.withSize(54, ItemStack.EMPTY);
         Inventory inv = player.getInventory();
         int slot = 0;
-        for (ItemStack stack : inv.items) {
+        for (int i = 0; i < inv.items.size(); i++) {
+            ItemStack stack = inv.items.get(i);
             if (slot < 54 && !stack.isEmpty()) {
                 result.set(slot, stack.copy());
+                inv.items.set(i, ItemStack.EMPTY);
             }
             slot++;
         }
-        for (ItemStack stack : inv.armor) {
+        for (int i = 0; i < inv.armor.size(); i++) {
+            ItemStack stack = inv.armor.get(i);
             if (slot < 54 && !stack.isEmpty()) {
                 result.set(slot, stack.copy());
+                inv.armor.set(i, ItemStack.EMPTY);
             }
             slot++;
         }
-        for (ItemStack stack : inv.offhand) {
+        for (int i = 0; i < inv.offhand.size(); i++) {
+            ItemStack stack = inv.offhand.get(i);
             if (slot < 54 && !stack.isEmpty()) {
                 result.set(slot, stack.copy());
+                inv.offhand.set(i, ItemStack.EMPTY);
             }
             slot++;
         }
+        
         return result;
     }
 

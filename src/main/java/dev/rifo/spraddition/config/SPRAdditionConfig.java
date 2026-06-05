@@ -8,6 +8,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec.BooleanValue;
 import net.neoforged.neoforge.common.ModConfigSpec.Builder;
 import net.neoforged.neoforge.common.ModConfigSpec.DoubleValue;
+import net.neoforged.neoforge.common.ModConfigSpec.IntValue;
 
 public final class SPRAdditionConfig {
     private static final Builder BUILDER = new Builder();
@@ -63,6 +64,27 @@ public final class SPRAdditionConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment("[EXPERIMENTAL] Automatic ragdoll from fall speed and ragdoll impact damage").push("experimental_fall_ragdoll");
+    }
+
+    public static final BooleanValue EXPERIMENTAL_FALL_RAGDOLL_ENABLED = BUILDER
+            .comment("[EXPERIMENTAL] When true, the player is automatically put into ragdoll mode when falling faster than the configured speed threshold.")
+            .define("fallRagdollEnabled", false);
+
+    public static final DoubleValue FALL_RAGDOLL_SPEED_THRESHOLD = BUILDER
+            .comment("[EXPERIMENTAL] The downward speed (blocks per second) at which the player is automatically ragdolled. Default is 12.0 (roughly 3+ block freefall).")
+            .defineInRange("fallRagdollSpeedThreshold", 12.0, 1.0, 100.0);
+
+    public static final BooleanValue RAGDOLL_IMPACT_DAMAGE_ENABLED = BUILDER
+            .comment("[EXPERIMENTAL] When true, a player in ragdoll mode takes fall damage upon landing (same formula as normal fall damage). Requires fallRagdollEnabled.")
+            .define("ragdollImpactDamageEnabled", true);
+
+    public static final DoubleValue RAGDOLL_IMPACT_DAMAGE_MULTIPLIER = BUILDER
+            .comment("[EXPERIMENTAL] Multiplier applied to the ragdoll impact damage. 1.0 = same as normal fall damage.")
+            .defineInRange("ragdollImpactDamageMultiplier", 1.0, 0.0, 10.0);
+
+    static {
+        BUILDER.pop();
     }
 
     public static final ModConfigSpec SPEC = BUILDER.build();
@@ -92,6 +114,10 @@ public final class SPRAdditionConfig {
         SPRAdditionSettings.setGrabMaxForce(GRAB_MAX_FORCE.get());
         SPRAdditionSettings.setGrabSpeedMultiplier(GRAB_SPEED_MULTIPLIER.get());
         SPRAdditionSettings.setGrabMaxDistance(GRAB_MAX_DISTANCE.get());
+        SPRAdditionSettings.setFallRagdollEnabled(EXPERIMENTAL_FALL_RAGDOLL_ENABLED.get());
+        SPRAdditionSettings.setFallRagdollSpeedThreshold(FALL_RAGDOLL_SPEED_THRESHOLD.get());
+        SPRAdditionSettings.setRagdollImpactDamageEnabled(RAGDOLL_IMPACT_DAMAGE_ENABLED.get());
+        SPRAdditionSettings.setRagdollImpactDamageMultiplier(RAGDOLL_IMPACT_DAMAGE_MULTIPLIER.get());
     }
 }
 

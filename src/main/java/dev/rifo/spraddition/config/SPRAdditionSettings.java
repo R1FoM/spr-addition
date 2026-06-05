@@ -13,6 +13,12 @@ public final class SPRAdditionSettings {
     private static double grabSpeedMultiplier = 0.5;
     private static double grabMaxDistance = 5.0;
 
+    // [EXPERIMENTAL] Fall ragdoll
+    private static boolean fallRagdollEnabled = false;
+    private static double fallRagdollSpeedThreshold = 12.0;
+    private static boolean ragdollImpactDamageEnabled = true;
+    private static double ragdollImpactDamageMultiplier = 1.0;
+
     private SPRAdditionSettings() {}
 
     public static boolean spawnRagdollOnDeath() {
@@ -93,6 +99,40 @@ public final class SPRAdditionSettings {
 
     public static void setGrabMaxDistance(double v) {
         grabMaxDistance = v;
+    }
+
+    // [EXPERIMENTAL] Fall ragdoll
+
+    public static boolean fallRagdollEnabled() {
+        return fallRagdollEnabled;
+    }
+
+    public static void setFallRagdollEnabled(boolean v) {
+        fallRagdollEnabled = v;
+    }
+
+    public static double fallRagdollSpeedThreshold() {
+        return fallRagdollSpeedThreshold;
+    }
+
+    public static void setFallRagdollSpeedThreshold(double v) {
+        fallRagdollSpeedThreshold = v;
+    }
+
+    public static boolean ragdollImpactDamageEnabled() {
+        return ragdollImpactDamageEnabled;
+    }
+
+    public static void setRagdollImpactDamageEnabled(boolean v) {
+        ragdollImpactDamageEnabled = v;
+    }
+
+    public static double ragdollImpactDamageMultiplier() {
+        return ragdollImpactDamageMultiplier;
+    }
+
+    public static void setRagdollImpactDamageMultiplier(double v) {
+        ragdollImpactDamageMultiplier = v;
     }
 }
 

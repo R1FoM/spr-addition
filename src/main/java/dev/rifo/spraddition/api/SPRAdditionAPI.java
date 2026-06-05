@@ -47,32 +47,51 @@ public final class SPRAdditionAPI {
     }
 
     public static List<ItemStack> getDeathInventory(ServerPlayer player) {
-        UUID ragdollHeadId = SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID());
+        return getDeathInventory(SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID()));
+    }
+
+    public static List<ItemStack> getDeathInventory(@Nullable UUID ragdollHeadId) {
         if (ragdollHeadId == null) return List.of();
         return SPRAdditionDeathHelper.getInventorySnapshot(ragdollHeadId);
     }
 
     public static boolean addItemToDeathRagdoll(ServerPlayer player, ItemStack item) {
-        UUID ragdollHeadId = SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID());
+        return addItemToDeathRagdoll(SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID()), item);
+    }
+
+    public static boolean addItemToDeathRagdoll(@Nullable UUID ragdollHeadId, ItemStack item) {
         if (ragdollHeadId == null) return false;
         return SPRAdditionDeathHelper.addItem(ragdollHeadId, item);
     }
 
     public static void setDeathInventory(ServerPlayer player, List<ItemStack> items) {
-        UUID ragdollHeadId = SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID());
+        setDeathInventory(SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID()), items);
+    }
+
+    public static void setDeathInventory(@Nullable UUID ragdollHeadId, List<ItemStack> items) {
         if (ragdollHeadId == null) return;
         SPRAdditionDeathHelper.setInventory(ragdollHeadId, items);
     }
 
     public static void clearDeathRagdollInventory(ServerPlayer player) {
-        UUID ragdollHeadId = SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID());
+        clearDeathRagdollInventory(SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID()));
+    }
+
+    public static void clearDeathRagdollInventory(@Nullable UUID ragdollHeadId) {
         if (ragdollHeadId == null) return;
         SPRAdditionDeathHelper.clearInventory(ragdollHeadId);
     }
 
     public static boolean hasDeathRagdoll(ServerPlayer player) {
-        UUID ragdollHeadId = SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID());
+        return isDeathRagdoll(SPRAdditionDeathHelper.getLatestDeathRagdoll(player.getUUID()));
+    }
+
+    public static boolean isDeathRagdoll(@Nullable UUID ragdollHeadId) {
         return ragdollHeadId != null && SPRAdditionDeathHelper.isDeathRagdoll(ragdollHeadId);
+    }
+
+    public static void normalizePlayerState(ServerPlayer player) {
+        dev.rifo.spraddition.physics.RagdollFallTracker.normalizePlayerState(player);
     }
 
     public static void removeAllRagdolls(net.minecraft.server.MinecraftServer server) {
