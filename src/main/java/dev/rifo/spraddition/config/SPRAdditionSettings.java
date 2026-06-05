@@ -11,15 +11,16 @@ public final class SPRAdditionSettings {
     private static double grabDamping = 15.0;
     private static double grabMaxForce = 80.0;
     private static double grabSpeedMultiplier = 0.5;
-    private static double grabMaxDistance = 5.0;
+    private static double grabMaxDistance = 3.0;
 
-    // [EXPERIMENTAL] Fall ragdoll
-    private static boolean fallRagdollEnabled = false;
-    private static double fallRagdollSpeedThreshold = 12.0;
+    // Fall ragdoll
+    private static boolean fallRagdollEnabled = true;
+    private static double fallRagdollSpeedThreshold = 14.0;
     private static boolean ragdollImpactDamageEnabled = true;
-    private static double ragdollImpactDamageMultiplier = 1.0;
+    private static double ragdollImpactDamageMultiplier = 1.3;
 
-    private SPRAdditionSettings() {}
+    private SPRAdditionSettings() {
+    }
 
     public static boolean spawnRagdollOnDeath() {
         return spawnRagdollOnDeath;
@@ -101,7 +102,7 @@ public final class SPRAdditionSettings {
         grabMaxDistance = v;
     }
 
-    // [EXPERIMENTAL] Fall ragdoll
+    // Fall ragdoll
 
     public static boolean fallRagdollEnabled() {
         return fallRagdollEnabled;
@@ -135,4 +136,3 @@ public final class SPRAdditionSettings {
         ragdollImpactDamageMultiplier = v;
     }
 }
-
