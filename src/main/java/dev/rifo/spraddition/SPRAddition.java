@@ -156,46 +156,31 @@ public final class SPRAddition {
             TorsoInventoryHolder torso,
             RagdollPartBlockEntity be
     ) {
-        List<ItemStack> snapshot = headId != null ? SPRAdditionDeathHelper.getInventorySnapshot(headId) : List.of();
-        NonNullList<ItemStack> torsoInv = torso.spraddition$getDeathInventory();
-        int slots = 54;
-        SimpleContainer container = new SimpleContainer(slots) {
-            @Override
-            public boolean stillValid(net.minecraft.world.entity.player.Player player) {
-                return !be.isRemoved();
-            }
-
-            @Override
-            public boolean canPlaceItem(int index, ItemStack stack) {
-                return false;
-            }
-        };
-        
-        for (int i = 0; i < slots; i++) {
-            if (i < snapshot.size() && !snapshot.get(i).isEmpty()) {
-                container.setItem(i, snapshot.get(i).copy());
-            } else if (i < torsoInv.size() && !torsoInv.get(i).isEmpty()) {
-                container.setItem(i, torsoInv.get(i).copy());
-            }
-        }
-
-        container.addListener(c -> {
-            NonNullList<ItemStack> updated = NonNullList.withSize(slots, ItemStack.EMPTY);
-            for (int i = 0; i < slots; i++) {
-                updated.set(i, c.getItem(i).copy());
-            }
-            torso.spraddition$setDeathInventory(updated);
-            be.setChanged();
-            if (headId != null) {
-                SPRAdditionDeathHelper.setInventory(headId, updated);
-            }
-        });
+        SimpleContainer container = torso.spraddition$getMenuContainer(headId, be);
 
         String ownerName = torso.spraddition$getSkinName();
         player.openMenu(new SimpleMenuProvider(
                 (id, inv, p) -> new ChestMenu(MenuType.GENERIC_9x6, id, inv, container, 6) {
+                    {
+                        for (int i = 0; i < container.getContainerSize(); i++) {
+                            net.minecraft.world.inventory.Slot oldSlot = this.slots.get(i);
+                            net.minecraft.world.inventory.Slot newSlot = new net.minecraft.world.inventory.Slot(oldSlot.container, oldSlot.getContainerSlot(), oldSlot.x, oldSlot.y) {
+                                @Override
+                                public boolean mayPlace(ItemStack stack) {
+                                    return false; // Make slot read-only to prevent placing items
+                                }
+                            };
+                            newSlot.index = oldSlot.index;
+                            this.slots.set(i, newSlot);
+                        }
+                    }
+
                     @Override
                     public ItemStack quickMoveStack(net.minecraft.world.entity.player.Player player, int index) {
+                        if (index >= container.getContainerSize()) {
+                            return ItemStack.EMPTY; // Prevent shift-clicking from player inventory into ragdoll
+                        }
+                        
                         net.minecraft.world.inventory.Slot slot = this.slots.get(index);
                         if (slot != null && slot.hasItem() && index < container.getContainerSize()) {
                             ItemStack stack = slot.getItem();

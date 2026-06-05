@@ -27,6 +27,12 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
     @Unique
     private NonNullList<ItemStack> spraddition$deathInventory = NonNullList.withSize(54, ItemStack.EMPTY);
 
+    @Unique
+    private net.minecraft.world.SimpleContainer spraddition$menuContainer;
+
+    @Unique
+    private java.util.UUID spraddition$ownerPlayerId;
+
     @Override
     public String spraddition$getSkinName() {
         return this.skinName;
@@ -40,6 +46,7 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
     @Override
     public void spraddition$setDeathInventory(NonNullList<ItemStack> inventory) {
         this.spraddition$deathInventory = inventory;
+        this.spraddition$menuContainer = null;
     }
 
     @Override
@@ -53,11 +60,72 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
     @Override
     public void spraddition$clearDeathInventory() {
         this.spraddition$deathInventory = NonNullList.withSize(54, ItemStack.EMPTY);
+        this.spraddition$menuContainer = null;
+    }
+
+    @Override
+    public net.minecraft.world.SimpleContainer spraddition$getMenuContainer(@org.jetbrains.annotations.Nullable java.util.UUID headId, dev.leo.sableplayerragdoll.block.entity.RagdollPartBlockEntity be) {
+        if (this.spraddition$menuContainer == null) {
+            this.spraddition$menuContainer = new net.minecraft.world.SimpleContainer(54) {
+                @Override
+                public boolean stillValid(net.minecraft.world.entity.player.Player player) {
+                    return !be.isRemoved();
+                }
+                @Override
+                public boolean canPlaceItem(int index, ItemStack stack) {
+                    return false;
+                }
+            };
+            
+            java.util.List<ItemStack> snapshot = headId != null ? dev.rifo.spraddition.physics.SPRAdditionDeathHelper.getInventorySnapshot(headId) : java.util.List.of();
+            for (int i = 0; i < 54; i++) {
+                if (i < snapshot.size() && !snapshot.get(i).isEmpty()) {
+                    this.spraddition$menuContainer.setItem(i, snapshot.get(i).copy());
+                } else if (i < this.spraddition$deathInventory.size() && !this.spraddition$deathInventory.get(i).isEmpty()) {
+                    this.spraddition$menuContainer.setItem(i, this.spraddition$deathInventory.get(i).copy());
+                }
+            }
+
+            this.spraddition$menuContainer.addListener(c -> {
+                NonNullList<ItemStack> updated = NonNullList.withSize(54, ItemStack.EMPTY);
+                for (int i = 0; i < 54; i++) {
+                    updated.set(i, c.getItem(i).copy());
+                }
+                this.spraddition$deathInventory = updated;
+                be.setChanged();
+                if (headId != null) {
+                    dev.rifo.spraddition.physics.SPRAdditionDeathHelper.setInventory(headId, updated);
+                }
+                
+                if (this.spraddition$ownerPlayerId != null && be.getLevel() != null && !be.getLevel().isClientSide) {
+                    boolean isDeath = headId != null && dev.rifo.spraddition.physics.SPRAdditionDeathHelper.isDeathRagdoll(headId);
+                    if (!isDeath) {
+                        Player ownerPlayer = be.getLevel().getPlayerByUUID(this.spraddition$ownerPlayerId);
+                        if (ownerPlayer != null) {
+                            Inventory inv = ownerPlayer.getInventory();
+                            int slot = 0;
+                            for (int i = 0; i < inv.items.size(); i++) {
+                                if (slot < 54) inv.items.set(i, updated.get(slot++));
+                            }
+                            for (int i = 0; i < inv.armor.size(); i++) {
+                                if (slot < 54) inv.armor.set(i, updated.get(slot++));
+                            }
+                            for (int i = 0; i < inv.offhand.size(); i++) {
+                                if (slot < 54) inv.offhand.set(i, updated.get(slot++));
+                            }
+                            inv.setChanged();
+                        }
+                    }
+                }
+            });
+        }
+        return this.spraddition$menuContainer;
     }
 
     @Inject(method = "configure(Ldev/leo/sableplayerragdoll/block/entity/RagdollPartBlockEntity$BodyPart;Lnet/minecraft/world/entity/player/Player;)V", at = @At("TAIL"))
     private void spraddition$onConfigure(BodyPart bodyPart, Player player, CallbackInfo ci) {
         if (bodyPart == BodyPart.TORSO) {
+            this.spraddition$ownerPlayerId = player.getUUID();
             Inventory inv = player.getInventory();
             this.spraddition$deathInventory = NonNullList.withSize(54, ItemStack.EMPTY);
             int slot = 0;
@@ -94,6 +162,9 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
             if (!invList.isEmpty()) {
                 tag.put("DeathInventory", invList);
             }
+            if (this.spraddition$ownerPlayerId != null) {
+                tag.putUUID("OwnerPlayerId", this.spraddition$ownerPlayerId);
+            }
         }
     }
 
@@ -102,6 +173,7 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
         RagdollPartBlockEntity be = (RagdollPartBlockEntity) (Object) this;
         if (be.bodyPart() == BodyPart.TORSO && tag.contains("DeathInventory", Tag.TAG_LIST)) {
             this.spraddition$deathInventory = NonNullList.withSize(54, ItemStack.EMPTY);
+            this.spraddition$menuContainer = null;
             ListTag invList = tag.getList("DeathInventory", Tag.TAG_COMPOUND);
             for (int i = 0; i < invList.size(); i++) {
                 CompoundTag slotTag = invList.getCompound(i);
@@ -110,6 +182,9 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
                     ItemStack parsed = ItemStack.parse(registries, slotTag.getCompound("Item")).orElse(ItemStack.EMPTY);
                     this.spraddition$deathInventory.set(slot, parsed);
                 }
+            }
+            if (tag.hasUUID("OwnerPlayerId")) {
+                this.spraddition$ownerPlayerId = tag.getUUID("OwnerPlayerId");
             }
         }
     }

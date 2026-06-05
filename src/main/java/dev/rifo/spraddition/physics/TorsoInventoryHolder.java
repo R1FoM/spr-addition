@@ -9,5 +9,6 @@ public interface TorsoInventoryHolder {
     boolean spraddition$hasDeathInventory();
     void spraddition$clearDeathInventory();
     String spraddition$getSkinName();
+    net.minecraft.world.SimpleContainer spraddition$getMenuContainer(@org.jetbrains.annotations.Nullable java.util.UUID headId, dev.leo.sableplayerragdoll.block.entity.RagdollPartBlockEntity be);
 }
 
