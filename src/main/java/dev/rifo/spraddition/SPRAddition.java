@@ -37,6 +37,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.minecraft.world.entity.Pose;
@@ -49,10 +50,15 @@ import java.util.List;
 
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 @Mod("spr_addition")
 public final class SPRAddition {
 
     public static final Logger LOGGER = LogUtils.getLogger();
+    
+    private static final Map<UUID, net.minecraft.world.phys.Vec3> pendingExplosionVelocity = new ConcurrentHashMap<>();
 
     public SPRAddition(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(SPRAdditionConfig::onLoad);
@@ -67,6 +73,7 @@ public final class SPRAddition {
         NeoForge.EVENT_BUS.addListener(SPRAddition::onServerTick);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onServerStarting);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onLivingFall);
+        NeoForge.EVENT_BUS.addListener(SPRAddition::onExplosionHurt);
     }
 
     private static void onServerTick(ServerTickEvent.Post event) {
@@ -104,7 +111,10 @@ public final class SPRAddition {
         // overwrite the values in between.
         RagdollFallTracker.normalizePlayerState(player);
 
-        UUID headId = SPRAdditionDeathHelper.spawnDeathRagdoll(player, level);
+        net.minecraft.world.phys.Vec3 pendingVel = pendingExplosionVelocity.remove(player.getUUID());
+        net.minecraft.world.phys.Vec3 velocity = pendingVel != null ? pendingVel : net.minecraft.world.phys.Vec3.ZERO;
+
+        UUID headId = SPRAdditionDeathHelper.spawnDeathRagdoll(player, level, velocity);
         if (headId != null) {
             deathEvent.setSession(SPRAdditionAPI.getPlayerlessSessionById(level, headId));
         }
@@ -219,5 +229,81 @@ public final class SPRAddition {
         if (RagdollFallTracker.shouldSuppressFallDamage(player.getUUID())) {
             event.setCanceled(true);
         }
+    }
+
+    /**
+     * When a player is hurt by an explosion, ragdoll and launch them in the blast direction.
+     */
+    private static void onExplosionHurt(LivingIncomingDamageEvent event) {
+        if (!dev.rifo.spraddition.config.SPRAdditionSettings.explosionRagdollEnabled()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.isDeadOrDying()) return;
+
+        if (!event.getSource().type().msgId().equals("explosion") &&
+            !event.getSource().type().msgId().equals("explosion.player")) return;
+
+        // Check if the player is already in a ragdoll session.
+        ServerLevel level = player.serverLevel();
+        dev.ryanhcode.sable.sublevel.ServerSubLevel ragdoll = dev.leo.sableplayerragdoll.physics.RagdollSessionManager.activeRagdollForPlayer(level, player.getUUID());
+
+        net.minecraft.world.phys.Vec3 explosionPos = event.getSource().getSourcePosition();
+        if (explosionPos == null) return;
+
+        // Shift explosion origin slightly downward so the impulse vector has a slight
+        // upward component (same trick as the KubeJS example: y - 1.4).
+        net.minecraft.world.phys.Vec3 adjustedExplosionPos = new net.minecraft.world.phys.Vec3(
+                explosionPos.x, explosionPos.y - 1.4, explosionPos.z);
+
+        net.minecraft.world.phys.Vec3 rawDirection = player.position()
+                .subtract(adjustedExplosionPos)
+                .normalize();
+                
+        // Ensure the player always flies UPWARDS so they don't get stuck in broken blocks
+        double upY = Math.max(rawDirection.y, 0.6);
+        net.minecraft.world.phys.Vec3 direction = new net.minecraft.world.phys.Vec3(rawDirection.x, upY, rawDirection.z).normalize();
+
+        // Tune the force based on the damage taken, creating a dynamic survival-friendly knockback
+        double damageMultiplier = Math.max(0.5, Math.min(2.0, event.getAmount() / 10.0));
+        double impulseScale = dev.rifo.spraddition.config.SPRAdditionSettings.explosionRagdollImpulse() * damageMultiplier;
+        net.minecraft.world.phys.Vec3 impulse = direction.scale(impulseScale);
+
+        if (ragdoll != null) {
+            dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem sys = dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem.get(level);
+            if (sys != null) {
+                var handle = sys.getPhysicsHandle(ragdoll);
+                if (handle != null && handle.isValid()) {
+                    double existingMultiplier = dev.rifo.spraddition.config.SPRAdditionSettings.explosionExistingRagdollMultiplier();
+                    // We multiply by 8.0 to compensate for the fact that we're only applying impulse
+                    // to the root node, and the physics solver distributes it across all connected body parts.
+                    handle.addLinearAndAngularVelocity(
+                            new org.joml.Vector3d(
+                                    impulse.x * existingMultiplier * 8.0, 
+                                    impulse.y * existingMultiplier * 8.0, 
+                                    impulse.z * existingMultiplier * 8.0
+                            ),
+                            new org.joml.Vector3d()
+                    );
+                }
+            }
+            return;
+        }
+
+        net.minecraft.world.phys.Vec3 velocity = player.getDeltaMovement().add(impulse);
+
+        pendingExplosionVelocity.put(player.getUUID(), velocity);
+
+        player.getServer().tell(new net.minecraft.server.TickTask(player.getServer().getTickCount() + 1, () -> {
+            if (player.isAlive() && RagdollSessionManager.activeRagdollForPlayer(level, player.getUUID()) == null) {
+                pendingExplosionVelocity.remove(player.getUUID());
+                
+                // If the player is sneaking, the ragdoll launch might fail or get canceled.
+                player.setShiftKeyDown(false);
+                if (player.getPose() == net.minecraft.world.entity.Pose.CROUCHING) {
+                    player.setPose(net.minecraft.world.entity.Pose.STANDING);
+                }
+                
+                RagdollAPI.launch(player, velocity);
+            }
+        }));
     }
 }

@@ -49,6 +49,10 @@ public final class SPRAdditionDeathHelper {
     }
 
     public static UUID spawnDeathRagdoll(ServerPlayer player, ServerLevel level) {
+        return spawnDeathRagdoll(player, level, Vec3.ZERO);
+    }
+
+    public static UUID spawnDeathRagdoll(ServerPlayer player, ServerLevel level, Vec3 velocity) {
         if (!RagdollSettings.enabled() || !SPRAdditionSettings.spawnRagdollOnDeath()) {
             return null;
         }
@@ -59,7 +63,7 @@ public final class SPRAdditionDeathHelper {
         NonNullList<ItemStack> inventory = captureFullInventory(player);
 
         ServerSubLevel headSubLevel = spawnDeathRagdollSubLevel(
-                level, player, position, headingDegrees, PlayerlessDespawnRule.never()
+                level, player, position, headingDegrees, velocity, PlayerlessDespawnRule.never()
         );
 
         if (headSubLevel == null) {
@@ -95,6 +99,7 @@ public final class SPRAdditionDeathHelper {
             ServerPlayer player,
             Vec3 position,
             double headingDegrees,
+            Vec3 initialVelocity,
             PlayerlessDespawnRule despawnRule
     ) {
         SubLevelPhysicsSystem physicsSystem = SubLevelPhysicsSystem.get(level);
@@ -119,7 +124,8 @@ public final class SPRAdditionDeathHelper {
 
         RagdollRegistryAccessor.getRagdollBodyIds().add(ragdollBody.getUniqueId());
         RagdollSavedData.get(level).saveRagdoll(ragdollBody.getUniqueId(), doll.partSubLevelIds());
-        RagdollDeferredSync.queuePlayerlessLaunch(ragdollBody, new Vector3d(), new Vector3d(), false, despawnRule);
+        Vector3d initVel = new Vector3d(initialVelocity.x, initialVelocity.y, initialVelocity.z);
+        RagdollDeferredSync.queuePlayerlessLaunch(ragdollBody, initVel, new Vector3d(), false, despawnRule);
 
         SablePlayerRagdoll.LOGGER.info(
                 "[spr_addition] death ragdoll {} for {} at {} ({} parts, {} constraints)",

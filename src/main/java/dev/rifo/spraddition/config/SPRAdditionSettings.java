@@ -19,6 +19,11 @@ public final class SPRAdditionSettings {
     private static boolean ragdollImpactDamageEnabled = true;
     private static double ragdollImpactDamageMultiplier = 1.3;
 
+    // Explosion ragdoll
+    private static boolean explosionRagdollEnabled = true;
+    private static double explosionRagdollImpulse = 28.0;
+    private static double explosionExistingRagdollMultiplier = 1.0;
+
     private SPRAdditionSettings() {
     }
 
@@ -134,5 +139,31 @@ public final class SPRAdditionSettings {
 
     public static void setRagdollImpactDamageMultiplier(double v) {
         ragdollImpactDamageMultiplier = v;
+    }
+
+    // Explosion ragdoll
+
+    public static boolean explosionRagdollEnabled() {
+        return explosionRagdollEnabled;
+    }
+
+    public static void setExplosionRagdollEnabled(boolean v) {
+        explosionRagdollEnabled = v;
+    }
+
+    public static double explosionRagdollImpulse() {
+        return explosionRagdollImpulse;
+    }
+
+    public static void setExplosionRagdollImpulse(double v) {
+        explosionRagdollImpulse = v;
+    }
+
+    public static double explosionExistingRagdollMultiplier() {
+        return explosionExistingRagdollMultiplier;
+    }
+
+    public static void setExplosionExistingRagdollMultiplier(double v) {
+        explosionExistingRagdollMultiplier = v;
     }
 }

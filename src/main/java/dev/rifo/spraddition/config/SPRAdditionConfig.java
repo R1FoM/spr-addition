@@ -85,6 +85,23 @@ public final class SPRAdditionConfig {
 
         static {
                 BUILDER.pop();
+                BUILDER.comment("Ragdoll from nearby explosion").push("explosion_ragdoll");
+        }
+
+        public static final BooleanValue EXPLOSION_RAGDOLL_ENABLED = BUILDER
+                        .comment("When true, players hit by an explosion are automatically ragdolled and launched in the blast direction.")
+                        .define("explosionRagdollEnabled", true);
+
+        public static final DoubleValue EXPLOSION_RAGDOLL_IMPULSE = BUILDER
+                        .comment("Impulse scale applied to the player when ragdolled by an explosion. Default is 28.0.")
+                        .defineInRange("explosionRagdollImpulse", 28.0, 0.0, 200.0);
+
+        public static final DoubleValue EXPLOSION_EXISTING_RAGDOLL_MULTIPLIER = BUILDER
+                        .comment("Multiplier for impulse applied to an already existing ragdoll hit by an explosion. Default is 1.0.")
+                        .defineInRange("explosionExistingRagdollMultiplier", 1.0, 0.0, 10.0);
+
+        static {
+                BUILDER.pop();
         }
 
         public static final ModConfigSpec SPEC = BUILDER.build();
@@ -121,5 +138,8 @@ public final class SPRAdditionConfig {
                 SPRAdditionSettings.setFallRagdollSpeedThreshold(FALL_RAGDOLL_SPEED_THRESHOLD.get());
                 SPRAdditionSettings.setRagdollImpactDamageEnabled(RAGDOLL_IMPACT_DAMAGE_ENABLED.get());
                 SPRAdditionSettings.setRagdollImpactDamageMultiplier(RAGDOLL_IMPACT_DAMAGE_MULTIPLIER.get());
+                SPRAdditionSettings.setExplosionRagdollEnabled(EXPLOSION_RAGDOLL_ENABLED.get());
+                SPRAdditionSettings.setExplosionRagdollImpulse(EXPLOSION_RAGDOLL_IMPULSE.get());
+                SPRAdditionSettings.setExplosionExistingRagdollMultiplier(EXPLOSION_EXISTING_RAGDOLL_MULTIPLIER.get());
         }
 }
