@@ -73,7 +73,7 @@ public final class SPRAdditionConfig {
 
         public static final DoubleValue FALL_RAGDOLL_SPEED_THRESHOLD = BUILDER
                         .comment("The downward speed (blocks per second) at which the player is automatically ragdolled. Default is 14.0 (roughly 3+ block freefall).")
-                        .defineInRange("fallRagdollSpeedThreshold", 14.0, 1.0, 100.0);
+                        .defineInRange("fallRagdollSpeedThreshold", 20.0, 1.0, 100.0);
 
         public static final BooleanValue RAGDOLL_IMPACT_DAMAGE_ENABLED = BUILDER
                         .comment("When true, a player in ragdoll mode takes fall damage upon landing (same formula as normal fall damage). Requires fallRagdollEnabled.")
@@ -99,6 +99,23 @@ public final class SPRAdditionConfig {
         public static final DoubleValue EXPLOSION_EXISTING_RAGDOLL_MULTIPLIER = BUILDER
                         .comment("Multiplier for impulse applied to an already existing ragdoll hit by an explosion. Default is 1.0.")
                         .defineInRange("explosionExistingRagdollMultiplier", 1.0, 0.0, 10.0);
+
+        static {
+                BUILDER.pop();
+                BUILDER.comment("Inventory interaction configuration").push("inventory");
+        }
+
+        public static final BooleanValue LIVE_RAGDOLL_ALLOW_PLACING = BUILDER
+                        .comment("When true, players can place items into a live ragdoll's inventory.")
+                        .define("liveRagdollAllowPlacing", true);
+
+        public static final BooleanValue LIVE_RAGDOLL_ALLOW_TAKING = BUILDER
+                        .comment("When true, players can take items out of a live ragdoll's inventory.")
+                        .define("liveRagdollAllowTaking", true);
+
+        public static final BooleanValue DEATH_RAGDOLL_ALLOW_TAKING = BUILDER
+                        .comment("When true, players can take items out of a death ragdoll's inventory.")
+                        .define("deathRagdollAllowTaking", true);
 
         static {
                 BUILDER.pop();
@@ -141,5 +158,9 @@ public final class SPRAdditionConfig {
                 SPRAdditionSettings.setExplosionRagdollEnabled(EXPLOSION_RAGDOLL_ENABLED.get());
                 SPRAdditionSettings.setExplosionRagdollImpulse(EXPLOSION_RAGDOLL_IMPULSE.get());
                 SPRAdditionSettings.setExplosionExistingRagdollMultiplier(EXPLOSION_EXISTING_RAGDOLL_MULTIPLIER.get());
+                
+                SPRAdditionSettings.setLiveRagdollAllowPlacing(LIVE_RAGDOLL_ALLOW_PLACING.get());
+                SPRAdditionSettings.setLiveRagdollAllowTaking(LIVE_RAGDOLL_ALLOW_TAKING.get());
+                SPRAdditionSettings.setDeathRagdollAllowTaking(DEATH_RAGDOLL_ALLOW_TAKING.get());
         }
 }

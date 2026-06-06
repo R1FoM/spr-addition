@@ -167,6 +167,10 @@ public final class SPRAddition {
             RagdollPartBlockEntity be
     ) {
         SimpleContainer container = torso.spraddition$getMenuContainer(headId, be);
+        boolean isDeath = headId != null && dev.rifo.spraddition.physics.SPRAdditionDeathHelper.isDeathRagdoll(headId);
+
+        boolean allowPlacing = isDeath ? false : dev.rifo.spraddition.config.SPRAdditionSettings.liveRagdollAllowPlacing();
+        boolean allowTaking = isDeath ? dev.rifo.spraddition.config.SPRAdditionSettings.deathRagdollAllowTaking() : dev.rifo.spraddition.config.SPRAdditionSettings.liveRagdollAllowTaking();
 
         String ownerName = torso.spraddition$getSkinName();
         player.openMenu(new SimpleMenuProvider(
@@ -174,10 +178,23 @@ public final class SPRAddition {
                     {
                         for (int i = 0; i < container.getContainerSize(); i++) {
                             net.minecraft.world.inventory.Slot oldSlot = this.slots.get(i);
+                            
+                            final boolean canPlaceHere;
+                            if (isDeath) {
+                                canPlaceHere = false;
+                            } else {
+                                canPlaceHere = allowPlacing && i < 41;
+                            }
+
                             net.minecraft.world.inventory.Slot newSlot = new net.minecraft.world.inventory.Slot(oldSlot.container, oldSlot.getContainerSlot(), oldSlot.x, oldSlot.y) {
                                 @Override
                                 public boolean mayPlace(ItemStack stack) {
-                                    return false; // Make slot read-only to prevent placing items
+                                    return canPlaceHere;
+                                }
+
+                                @Override
+                                public boolean mayPickup(net.minecraft.world.entity.player.Player playerIn) {
+                                    return allowTaking;
                                 }
                             };
                             newSlot.index = oldSlot.index;
@@ -188,7 +205,15 @@ public final class SPRAddition {
                     @Override
                     public ItemStack quickMoveStack(net.minecraft.world.entity.player.Player player, int index) {
                         if (index >= container.getContainerSize()) {
-                            return ItemStack.EMPTY; // Prevent shift-clicking from player inventory into ragdoll
+                            // Player inventory -> Ragdoll
+                            if (!allowPlacing || isDeath) {
+                                return ItemStack.EMPTY;
+                            }
+                        } else {
+                            // Ragdoll -> Player inventory
+                            if (!allowTaking) {
+                                return ItemStack.EMPTY;
+                            }
                         }
                         
                         net.minecraft.world.inventory.Slot slot = this.slots.get(index);

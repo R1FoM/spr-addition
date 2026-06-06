@@ -73,7 +73,8 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
                 }
                 @Override
                 public boolean canPlaceItem(int index, ItemStack stack) {
-                    return false;
+                    boolean isDeath = headId != null && dev.rifo.spraddition.physics.SPRAdditionDeathHelper.isDeathRagdoll(headId);
+                    return !isDeath && dev.rifo.spraddition.config.SPRAdditionSettings.liveRagdollAllowPlacing() && index < 41;
                 }
             };
             
@@ -100,21 +101,44 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
                 if (this.spraddition$ownerPlayerId != null && be.getLevel() != null && !be.getLevel().isClientSide) {
                     boolean isDeath = headId != null && dev.rifo.spraddition.physics.SPRAdditionDeathHelper.isDeathRagdoll(headId);
                     if (!isDeath) {
-                        Player ownerPlayer = be.getLevel().getPlayerByUUID(this.spraddition$ownerPlayerId);
-                        if (ownerPlayer != null) {
-                            Inventory inv = ownerPlayer.getInventory();
-                            int slot = 0;
-                            for (int i = 0; i < inv.items.size(); i++) {
-                                if (slot < 54) inv.items.set(i, updated.get(slot++));
+                            Player ownerPlayer = be.getLevel().getServer().getPlayerList().getPlayer(this.spraddition$ownerPlayerId);
+                            if (ownerPlayer != null && ownerPlayer instanceof net.minecraft.server.level.ServerPlayer sp) {
+                                Inventory inv = sp.getInventory();
+                                int slot = 0;
+                                boolean changed = false;
+                                for (int i = 0; i < inv.items.size(); i++) {
+                                    if (slot < 54) {
+                                        if (!ItemStack.matches(inv.items.get(i), updated.get(slot))) {
+                                            inv.items.set(i, updated.get(slot));
+                                            changed = true;
+                                        }
+                                        slot++;
+                                    }
+                                }
+                                for (int i = 0; i < inv.armor.size(); i++) {
+                                    if (slot < 54) {
+                                        if (!ItemStack.matches(inv.armor.get(i), updated.get(slot))) {
+                                            inv.armor.set(i, updated.get(slot));
+                                            changed = true;
+                                        }
+                                        slot++;
+                                    }
+                                }
+                                for (int i = 0; i < inv.offhand.size(); i++) {
+                                    if (slot < 54) {
+                                        if (!ItemStack.matches(inv.offhand.get(i), updated.get(slot))) {
+                                            inv.offhand.set(i, updated.get(slot));
+                                            changed = true;
+                                        }
+                                        slot++;
+                                    }
+                                }
+                                if (changed) {
+                                    inv.setChanged();
+                                    sp.inventoryMenu.broadcastChanges();
+                                    dev.rifo.spraddition.SPRAddition.LOGGER.info("[spr_addition] Successfully synced and broadcasted inventory for live ragdoll: {}", sp.getName().getString());
+                                }
                             }
-                            for (int i = 0; i < inv.armor.size(); i++) {
-                                if (slot < 54) inv.armor.set(i, updated.get(slot++));
-                            }
-                            for (int i = 0; i < inv.offhand.size(); i++) {
-                                if (slot < 54) inv.offhand.set(i, updated.get(slot++));
-                            }
-                            inv.setChanged();
-                        }
                     }
                 }
             });

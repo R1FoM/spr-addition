@@ -15,7 +15,7 @@ public final class SPRAdditionSettings {
 
     // Fall ragdoll
     private static boolean fallRagdollEnabled = true;
-    private static double fallRagdollSpeedThreshold = 14.0;
+    private static double fallRagdollSpeedThreshold = 20.0;
     private static boolean ragdollImpactDamageEnabled = true;
     private static double ragdollImpactDamageMultiplier = 1.3;
 
@@ -24,7 +24,36 @@ public final class SPRAdditionSettings {
     private static double explosionRagdollImpulse = 28.0;
     private static double explosionExistingRagdollMultiplier = 1.0;
 
+    // Inventory interaction
+    private static boolean liveRagdollAllowPlacing = true;
+    private static boolean liveRagdollAllowTaking = true;
+    private static boolean deathRagdollAllowTaking = true;
+
     private SPRAdditionSettings() {
+    }
+
+    public static boolean liveRagdollAllowPlacing() {
+        return liveRagdollAllowPlacing;
+    }
+
+    public static void setLiveRagdollAllowPlacing(boolean v) {
+        liveRagdollAllowPlacing = v;
+    }
+
+    public static boolean liveRagdollAllowTaking() {
+        return liveRagdollAllowTaking;
+    }
+
+    public static void setLiveRagdollAllowTaking(boolean v) {
+        liveRagdollAllowTaking = v;
+    }
+
+    public static boolean deathRagdollAllowTaking() {
+        return deathRagdollAllowTaking;
+    }
+
+    public static void setDeathRagdollAllowTaking(boolean v) {
+        deathRagdollAllowTaking = v;
     }
 
     public static boolean spawnRagdollOnDeath() {
