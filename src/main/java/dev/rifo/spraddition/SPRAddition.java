@@ -67,7 +67,7 @@ public final class SPRAddition {
 
         NeoForge.EVENT_BUS.addListener(SPRAddition::onPlayerDeath);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onPlayerDrops);
-        NeoForge.EVENT_BUS.addListener(SPRAddition::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, SPRAddition::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onServerStopped);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(SPRAddition::onServerTick);

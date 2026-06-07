@@ -217,7 +217,7 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
     public abstract org.joml.Vector3d grabCenter();
 
     @Shadow
-    public abstract void stopTorsoGrab(java.util.UUID playerId);
+    public abstract void stopGrab(java.util.UUID playerId);
 
     @Shadow
     @org.spongepowered.asm.mixin.Final
@@ -246,7 +246,7 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
                     }
                 }
                 for (java.util.UUID id : toRemove) {
-                    this.stopTorsoGrab(id);
+                    this.stopGrab(id);
                 }
             }
         }

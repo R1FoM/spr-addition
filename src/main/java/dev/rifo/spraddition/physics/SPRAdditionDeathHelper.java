@@ -2,6 +2,7 @@ package dev.rifo.spraddition.physics;
 
 import dev.leo.sableplayerragdoll.SablePlayerRagdoll;
 import dev.leo.sableplayerragdoll.api.PlayerlessDespawnRule;
+import dev.leo.sableplayerragdoll.api.RagdollLimbOptions;
 import dev.leo.sableplayerragdoll.config.RagdollSettings;
 import dev.leo.sableplayerragdoll.physics.*;
 import dev.rifo.spraddition.config.SPRAdditionSettings;
@@ -123,7 +124,7 @@ public final class SPRAdditionDeathHelper {
         }
 
         RagdollRegistryAccessor.getRagdollBodyIds().add(ragdollBody.getUniqueId());
-        RagdollSavedData.get(level).saveRagdoll(ragdollBody.getUniqueId(), doll.partSubLevelIds());
+        RagdollSavedData.get(level).saveRagdoll(ragdollBody.getUniqueId(), doll.partSubLevelIds(), RagdollLimbOptions.defaults());
         Vector3d initVel = new Vector3d(initialVelocity.x, initialVelocity.y, initialVelocity.z);
         RagdollDeferredSync.queuePlayerlessLaunch(ragdollBody, initVel, new Vector3d(), false, despawnRule);
 

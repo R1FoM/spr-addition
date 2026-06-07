@@ -90,7 +90,7 @@ repositories {
     }
 
     flatDir {
-        dirs 'f:/mods/sable-player-ragdoll-main/build/libs'
+        dirs 'f:/mods/spr-addition-main-stable/sable-player-ragdoll-main/build/libs'
     }
 }
 
@@ -112,7 +112,7 @@ dependencies {
         exclude group: 'com.tterrag.registrate'
     }
 
-    implementation name: "sable_player_ragdoll-1.21.1-0.3.0"
+    implementation name: "sable_player_ragdoll-1.21.1-0.4.3"
 }
 
 processResources {
