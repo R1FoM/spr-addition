@@ -151,7 +151,8 @@ public final class SPRAddition {
 
         BlockEntity be = level.getBlockEntity(event.getPos());
         if (be instanceof TorsoInventoryHolder torso) {
-            boolean hasInv = torso.spraddition$hasDeathInventory() || (headId != null && !SPRAdditionDeathHelper.getInventorySnapshot(headId).isEmpty());
+            boolean isDeath = headId != null && dev.rifo.spraddition.physics.SPRAdditionDeathHelper.isDeathRagdoll(headId);
+            boolean hasInv = !isDeath || torso.spraddition$hasDeathInventory() || (headId != null && !SPRAdditionDeathHelper.getInventorySnapshot(headId).isEmpty());
             if (hasInv) {
                 openTorsoChest(player, headId, torso, (RagdollPartBlockEntity) be);
                 event.setCancellationResult(InteractionResult.sidedSuccess(level.isClientSide()));

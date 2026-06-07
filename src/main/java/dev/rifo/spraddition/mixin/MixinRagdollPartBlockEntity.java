@@ -109,7 +109,7 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
                                 for (int i = 0; i < inv.items.size(); i++) {
                                     if (slot < 54) {
                                         if (!ItemStack.matches(inv.items.get(i), updated.get(slot))) {
-                                            inv.items.set(i, updated.get(slot));
+                                            inv.items.set(i, updated.get(slot).copy());
                                             changed = true;
                                         }
                                         slot++;
@@ -118,7 +118,7 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
                                 for (int i = 0; i < inv.armor.size(); i++) {
                                     if (slot < 54) {
                                         if (!ItemStack.matches(inv.armor.get(i), updated.get(slot))) {
-                                            inv.armor.set(i, updated.get(slot));
+                                            inv.armor.set(i, updated.get(slot).copy());
                                             changed = true;
                                         }
                                         slot++;
@@ -127,7 +127,7 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
                                 for (int i = 0; i < inv.offhand.size(); i++) {
                                     if (slot < 54) {
                                         if (!ItemStack.matches(inv.offhand.get(i), updated.get(slot))) {
-                                            inv.offhand.set(i, updated.get(slot));
+                                            inv.offhand.set(i, updated.get(slot).copy());
                                             changed = true;
                                         }
                                         slot++;
@@ -195,16 +195,18 @@ public abstract class MixinRagdollPartBlockEntity implements TorsoInventoryHolde
     @Inject(method = "loadAdditional", at = @At("TAIL"))
     private void spraddition$loadAdditional(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
         RagdollPartBlockEntity be = (RagdollPartBlockEntity) (Object) this;
-        if (be.bodyPart() == BodyPart.TORSO && tag.contains("DeathInventory", Tag.TAG_LIST)) {
-            this.spraddition$deathInventory = NonNullList.withSize(54, ItemStack.EMPTY);
-            this.spraddition$menuContainer = null;
-            ListTag invList = tag.getList("DeathInventory", Tag.TAG_COMPOUND);
-            for (int i = 0; i < invList.size(); i++) {
-                CompoundTag slotTag = invList.getCompound(i);
-                int slot = slotTag.getByte("Slot") & 0xFF;
-                if (slot < 54) {
-                    ItemStack parsed = ItemStack.parse(registries, slotTag.getCompound("Item")).orElse(ItemStack.EMPTY);
-                    this.spraddition$deathInventory.set(slot, parsed);
+        if (be.bodyPart() == BodyPart.TORSO) {
+            if (tag.contains("DeathInventory", Tag.TAG_LIST)) {
+                this.spraddition$deathInventory = NonNullList.withSize(54, ItemStack.EMPTY);
+                this.spraddition$menuContainer = null;
+                ListTag invList = tag.getList("DeathInventory", Tag.TAG_COMPOUND);
+                for (int i = 0; i < invList.size(); i++) {
+                    CompoundTag slotTag = invList.getCompound(i);
+                    int slot = slotTag.getByte("Slot") & 0xFF;
+                    if (slot < 54) {
+                        ItemStack parsed = ItemStack.parse(registries, slotTag.getCompound("Item")).orElse(ItemStack.EMPTY);
+                        this.spraddition$deathInventory.set(slot, parsed);
+                    }
                 }
             }
             if (tag.hasUUID("OwnerPlayerId")) {
