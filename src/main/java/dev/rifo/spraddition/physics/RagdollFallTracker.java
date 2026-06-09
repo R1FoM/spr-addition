@@ -19,28 +19,39 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * [EXPERIMENTAL] Tracks physics velocity of each player's live ragdoll body every
+ * [EXPERIMENTAL] Tracks physics velocity of each player's live ragdoll body
+ * every
  * server tick and applies fall-impact damage either:
- *   a) DURING the ragdoll session when a sharp ground-impact deceleration is detected, OR
- *   b) When the ragdoll session ends (fallback for soft / undetected landings).
+ * a) DURING the ragdoll session when a sharp ground-impact deceleration is
+ * detected, OR
+ * b) When the ragdoll session ends (fallback for soft / undetected landings).
  *
  * <h3>Why not track player.getDeltaMovement()?</h3>
- * During a ragdoll session the player <em>entity</em> is stationary — Sable drives
- * physics in a sub-level.  We read the velocity from the physics handle instead.
+ * During a ragdoll session the player <em>entity</em> is stationary — Sable
+ * drives
+ * physics in a sub-level. We read the velocity from the physics handle instead.
  *
  * <h3>Impact detection</h3>
- * Each tick we record the ragdoll head's downward speed.  If the speed drops to less
- * than {@value #IMPACT_DECEL_RATIO} × the previous tick's speed (and the previous speed
- * was above {@value #IMPACT_MIN_SPEED_BPS} BPS), we treat it as a ground impact and
- * immediately apply {@link #applyImpactDamage}.  After an impact the peak is reset to 0
- * so the ragdoll-exit fallback does not double-apply damage.  A short cooldown prevents
+ * Each tick we record the ragdoll head's downward speed. If the speed drops to
+ * less
+ * than {@value #IMPACT_DECEL_RATIO} × the previous tick's speed (and the
+ * previous speed
+ * was above {@value #IMPACT_MIN_SPEED_BPS} BPS), we treat it as a ground impact
+ * and
+ * immediately apply {@link #applyImpactDamage}. After an impact the peak is
+ * reset to 0
+ * so the ragdoll-exit fallback does not double-apply damage. A short cooldown
+ * prevents
  * bounce-triggered follow-up damage.
  */
 public final class RagdollFallTracker {
 
-    // ── tuning constants ──────────────────────────────────────────────────────────
+    // ── tuning constants
+    // ──────────────────────────────────────────────────────────
 
-    /** Minimum pre-impact downward speed (blocks/second) required to trigger damage. */
+    /**
+     * Minimum pre-impact downward speed (blocks/second) required to trigger damage.
+     */
     private static final double IMPACT_MIN_SPEED_BPS = 12.0;
 
     /**
@@ -52,16 +63,20 @@ public final class RagdollFallTracker {
     /** Ticks of cooldown after an impact — prevents bounce double-damage. */
     private static final int IMPACT_COOLDOWN_TICKS = 40;
 
-    // ── per-player state ──────────────────────────────────────────────────────────
+    // ── per-player state
+    // ──────────────────────────────────────────────────────────
 
     /** Peak downward speed (BPS) seen during the current ragdoll session. */
-    private static final ConcurrentHashMap<UUID, Double> peakDownSpeedBps  = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, Double> peakDownSpeedBps = new ConcurrentHashMap<>();
 
-    /** Downward speed (BPS) recorded on the previous tick — used for impact detection. */
-    private static final ConcurrentHashMap<UUID, Double> prevDownSpeedBps  = new ConcurrentHashMap<>();
+    /**
+     * Downward speed (BPS) recorded on the previous tick — used for impact
+     * detection.
+     */
+    private static final ConcurrentHashMap<UUID, Double> prevDownSpeedBps = new ConcurrentHashMap<>();
 
     /** Remaining cooldown ticks after an in-ragdoll impact. */
-    private static final ConcurrentHashMap<UUID, Integer> impactCooldown   = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, Integer> impactCooldown = new ConcurrentHashMap<>();
 
     /** Players currently inside a live ragdoll session. */
     private static final Set<UUID> playersInRagdoll = ConcurrentHashMap.newKeySet();
@@ -73,12 +88,17 @@ public final class RagdollFallTracker {
      */
     private static final ConcurrentHashMap<UUID, Integer> suppressFallDamageTicks = new ConcurrentHashMap<>();
 
-    /** Players currently receiving synthetic fall damage (so LivingFallEvent is allowed). */
+    /**
+     * Players currently receiving synthetic fall damage (so LivingFallEvent is
+     * allowed).
+     */
     private static final Set<UUID> syntheticDamagePlayers = ConcurrentHashMap.newKeySet();
 
-    private RagdollFallTracker() {}
+    private RagdollFallTracker() {
+    }
 
-    // ── main tick entry-point ─────────────────────────────────────────────────────
+    // ── main tick entry-point
+    // ─────────────────────────────────────────────────────
 
     /** Called from {@code SPRAddition.onServerTick}. */
     public static void tick(MinecraftServer server) {
@@ -88,7 +108,8 @@ public final class RagdollFallTracker {
             suppressFallDamageTicks.entrySet().removeIf(e -> e.getValue() <= 0);
         }
 
-        if (!SPRAdditionSettings.fallRagdollEnabled()) return;
+        if (!SPRAdditionSettings.fallRagdollEnabled())
+            return;
 
         for (ServerLevel level : server.getAllLevels()) {
             List<ServerPlayer> players = new ArrayList<>(level.players());
@@ -98,7 +119,8 @@ public final class RagdollFallTracker {
         }
     }
 
-    // ── per-player logic ──────────────────────────────────────────────────────────
+    // ── per-player logic
+    // ──────────────────────────────────────────────────────────
 
     private static void tickPlayer(ServerPlayer player, ServerLevel level) {
         UUID uuid = player.getUUID();
@@ -123,8 +145,10 @@ public final class RagdollFallTracker {
 
                     if (cooldown != null) {
                         // Tick down the post-impact cooldown.
-                        if (cooldown <= 1) impactCooldown.remove(uuid);
-                        else              impactCooldown.put(uuid, cooldown - 1);
+                        if (cooldown <= 1)
+                            impactCooldown.remove(uuid);
+                        else
+                            impactCooldown.put(uuid, cooldown - 1);
 
                     } else if (prev >= IMPACT_MIN_SPEED_BPS
                             && downSpeed < prev * IMPACT_DECEL_RATIO) {
@@ -151,7 +175,7 @@ public final class RagdollFallTracker {
         if (playersInRagdoll.remove(uuid)) {
 
             // Normalize all rotation / pose fields that Sable may have left at
-            // physics-driven values.  If the damage below kills the player,
+            // physics-driven values. If the damage below kills the player,
             // RagdollAssemblyHelper.spawn() reads these fields; extreme values
             // cause head stretching / texture corruption in the death ragdoll.
             normalizePlayerState(player);
@@ -172,8 +196,10 @@ public final class RagdollFallTracker {
         }
 
         // ── CASE 3: auto-ragdoll trigger ─────────────────────────────────────────
-        if (!player.isAlive() || player.isSpectator() || player.isCreative()) return;
-        if (player.onGround() || player.isInWater() || player.isInLava()) return;
+        if (!player.isAlive() || player.isSpectator() || player.isCreative())
+            return;
+        if (player.onGround() || player.isInWater() || player.isInLava())
+            return;
 
         Vec3 movement = player.getDeltaMovement();
         // movement.y is blocks/tick; ×20 gives blocks/second for threshold comparison.
@@ -185,7 +211,8 @@ public final class RagdollFallTracker {
         }
     }
 
-    // ── helpers ───────────────────────────────────────────────────────────────────
+    // ── helpers
+    // ───────────────────────────────────────────────────────────────────
 
     /**
      * Converts peak ragdoll speed (blocks/second from Sable physics handle) to an
@@ -200,10 +227,10 @@ public final class RagdollFallTracker {
      * </pre>
      */
     private static void applyImpactDamage(ServerPlayer player, ServerLevel level, double peakBps) {
-        double vTick           = peakBps / 20.0;
+        double vTick = peakBps / 20.0;
         double equivalentHeight = (vTick * vTick) / 0.16; // 2 × 0.08 = 0.16
-        float  multiplier       = (float) SPRAdditionSettings.ragdollImpactDamageMultiplier();
-        
+        float multiplier = (float) SPRAdditionSettings.ragdollImpactDamageMultiplier();
+
         UUID uuid = player.getUUID();
         syntheticDamagePlayers.add(uuid);
         try {
@@ -216,11 +243,12 @@ public final class RagdollFallTracker {
     /**
      * Resets rotation and pose to neutral standing values.
      *
-     * <p>After a live ragdoll session Sable can leave the player entity with:
+     * <p>
+     * After a live ragdoll session Sable can leave the player entity with:
      * <ul>
-     *   <li>{@code xRot} at extreme angles (e.g. −90° face-down)</li>
-     *   <li>{@code yHeadRot} / {@code yBodyRot} diverged from {@code yRot}</li>
-     *   <li>A non-STANDING {@link Pose} (e.g. SWIMMING / FALL_FLYING)</li>
+     * <li>{@code xRot} at extreme angles (e.g. −90° face-down)</li>
+     * <li>{@code yHeadRot} / {@code yBodyRot} diverged from {@code yRot}</li>
+     * <li>A non-STANDING {@link Pose} (e.g. SWIMMING / FALL_FLYING)</li>
      * </ul>
      * All of these are read by {@code RagdollAssemblyHelper.spawn()} when building
      * the death ragdoll and cause head stretching / texture corruption.
@@ -240,7 +268,8 @@ public final class RagdollFallTracker {
     }
 
     public static boolean shouldSuppressFallDamage(UUID uuid) {
-        if (syntheticDamagePlayers.contains(uuid)) return false;
+        if (syntheticDamagePlayers.contains(uuid))
+            return false;
         return playersInRagdoll.contains(uuid) || suppressFallDamageTicks.containsKey(uuid);
     }
 

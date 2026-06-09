@@ -81,7 +81,7 @@ public final class SPRAdditionConfig {
 
         public static final DoubleValue RAGDOLL_IMPACT_DAMAGE_MULTIPLIER = BUILDER
                         .comment("Multiplier applied to the ragdoll impact damage. 1.0 = same as normal fall damage.")
-                        .defineInRange("ragdollImpactDamageMultiplier", 1.3, 0.0, 10.0);
+                        .defineInRange("ragdollImpactDamageMultiplier", 1.0, 0.0, 10.0);
 
         static {
                 BUILDER.pop();

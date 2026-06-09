@@ -17,7 +17,7 @@ public final class SPRAdditionSettings {
     private static boolean fallRagdollEnabled = true;
     private static double fallRagdollSpeedThreshold = 20.0;
     private static boolean ragdollImpactDamageEnabled = true;
-    private static double ragdollImpactDamageMultiplier = 1.3;
+    private static double ragdollImpactDamageMultiplier = 1.0;
 
     // Explosion ragdoll
     private static boolean explosionRagdollEnabled = true;

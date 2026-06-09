@@ -18,8 +18,21 @@ public class RagdollDeathEvent extends Event implements ICancellableEvent {
         return this.player;
     }
 
+    public ServerPlayer getPlayer() {
+        return this.player;
+    }
+
+    public ServerPlayer getEntity() {
+        return this.player;
+    }
+
     @Nullable
     public PlayerlessRagdollSession session() {
+        return this.session;
+    }
+
+    @Nullable
+    public PlayerlessRagdollSession getSession() {
         return this.session;
     }
 

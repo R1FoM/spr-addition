@@ -130,7 +130,54 @@ public final class SPRAdditionAPI {
         }
     }
 
-    private record ActivePlayerlessRagdollSession(ServerLevel level, ServerSubLevel subLevel, long startGameTime) implements PlayerlessRagdollSession {
+    @Nullable
+    public static PlayerlessRagdollSession getPlayerlessSessionById(ServerLevel level, String headId) {
+        try {
+            return getPlayerlessSessionById(level, UUID.fromString(headId));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static List<ItemStack> getDeathInventory(String ragdollHeadId) {
+        try {
+            return getDeathInventory(UUID.fromString(ragdollHeadId));
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    public static boolean addItemToDeathRagdoll(String ragdollHeadId, ItemStack item) {
+        try {
+            return addItemToDeathRagdoll(UUID.fromString(ragdollHeadId), item);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static void setDeathInventory(String ragdollHeadId, List<ItemStack> items) {
+        try {
+            setDeathInventory(UUID.fromString(ragdollHeadId), items);
+        } catch (Exception e) {
+        }
+    }
+
+    public static void clearDeathRagdollInventory(String ragdollHeadId) {
+        try {
+            clearDeathRagdollInventory(UUID.fromString(ragdollHeadId));
+        } catch (Exception e) {
+        }
+    }
+
+    public static boolean isDeathRagdoll(String ragdollHeadId) {
+        try {
+            return isDeathRagdoll(UUID.fromString(ragdollHeadId));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public record ActivePlayerlessRagdollSession(ServerLevel level, ServerSubLevel subLevel, long startGameTime) implements PlayerlessRagdollSession {
 
         @Override
         public UUID id() {
